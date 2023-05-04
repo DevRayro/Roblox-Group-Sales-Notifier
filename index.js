@@ -5,7 +5,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const config = require("./config.json")
  
 setInterval(function() {
-    console.log("🔔 | This is a free project, please consider supporting me by following me on Roblox( https://rblx.name/1667282355 ) with a follow.");
+    console.log("🔔 | This is a free project, please consider supporting me by following me on Roblox( https://rblx.name/1667282355 ).");
   }, 30000);
 
 async function startApp () {
