@@ -1,7 +1,7 @@
 // src/discord/bot.js
 // Discord client wrapper: login, slash command routing, channel posting.
 
-const { Client, GatewayIntentBits, Events, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Events, MessageFlags, REST, Routes } = require('discord.js');
 const config = require('../config');
 const logger = require('../utils/logger');
 const { definitions, makeHandlers } = require('./commands');
@@ -30,7 +30,7 @@ class DiscordBot {
         if (interaction.deferred || interaction.replied) {
           await interaction.editReply(reply).catch(() => {});
         } else {
-          await interaction.reply({ content: reply, ephemeral: true }).catch(() => {});
+          await interaction.reply({ content: reply, flags: MessageFlags.Ephemeral }).catch(() => {});
         }
       }
     });

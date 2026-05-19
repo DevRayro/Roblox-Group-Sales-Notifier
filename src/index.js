@@ -49,6 +49,7 @@ async function main() {
   }
 
   const state = stateUtil.load();
+  const isFirstRun = !state.lastSeenTransactionId && !state.lastSeenCreated;
   let saving = null;
   const persist = () => {
     if (saving) return;
@@ -110,7 +111,12 @@ async function main() {
 
   // Wait for Discord to be fully ready before starting the poller, so the very first
   // batch of notifications can actually be sent.
-  bot.client.once('clientReady', async () => {
+  bot.client.once(require('discord.js').Events.ClientReady, async () => {
+    if (isFirstRun) {
+      logger.info('First run detected — establishing a baseline so we only post sales going forward.');
+      await poller.primeBaseline();
+      stateUtil.save(state);
+    }
     if (config.sendStartupRecap) {
       try {
         await bot.sendToChannel({

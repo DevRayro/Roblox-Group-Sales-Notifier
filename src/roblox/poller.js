@@ -12,14 +12,19 @@ class TransactionPoller extends EventEmitter {
     this.intervalMs = intervalSeconds * 1000;
     this._timer = null;
     this._running = false;
-    this._lastSeenId = null;
+    this._lastSeenKey = null; // idHash or numeric id, whichever is non-empty
     this._lastSeenCreated = null;
     this._client = getClient();
   }
 
   primeFromState(state) {
-    this._lastSeenId = state.lastSeenTransactionId || null;
+    this._lastSeenKey = state.lastSeenTransactionId || null;
     this._lastSeenCreated = state.lastSeenCreated || null;
+  }
+
+  // Roblox sets `id: 0` for many recent transactions; the unique identifier is `idHash`.
+  _txKey(tx) {
+    return tx.idHash || (tx.id ? String(tx.id) : null);
   }
 
   start() {
@@ -63,10 +68,10 @@ class TransactionPoller extends EventEmitter {
 
       // Update bookmarks to the most recent transaction we saw.
       const newest = transactions[0];
-      this._lastSeenId = newest.id ?? this._lastSeenId;
-      this._lastSeenCreated = newest.created ?? this._lastSeenCreated;
+      this._lastSeenKey = this._txKey(newest) || this._lastSeenKey;
+      this._lastSeenCreated = newest.created || this._lastSeenCreated;
       this.emit('progress', {
-        lastSeenTransactionId: this._lastSeenId,
+        lastSeenTransactionId: this._lastSeenKey,
         lastSeenCreated: this._lastSeenCreated,
       });
     } catch (err) {
@@ -87,12 +92,35 @@ class TransactionPoller extends EventEmitter {
   }
 
   _isNewer(tx) {
-    if (!this._lastSeenId && !this._lastSeenCreated) return true; // First run after fresh start.
-    if (this._lastSeenId && tx.id && tx.id === this._lastSeenId) return false;
+    // First run after a fresh install: do not flood — start tracking from "now".
+    if (!this._lastSeenKey && !this._lastSeenCreated) return false;
+    const key = this._txKey(tx);
+    if (this._lastSeenKey && key && key === this._lastSeenKey) return false;
     if (this._lastSeenCreated && tx.created) {
       return new Date(tx.created).getTime() > new Date(this._lastSeenCreated).getTime();
     }
     return true;
+  }
+
+  // Capture the most recent transaction without emitting it, so first-run does not
+  // flood the channel with already-old sales.
+  async primeBaseline() {
+    try {
+      const res = await this._client.getGroupTransactions(this.groupId, {
+        transactionType: 'Sale', limit: 1, sortOrder: 'Desc',
+      });
+      const newest = res?.data?.[0];
+      if (newest) {
+        this._lastSeenKey = this._txKey(newest);
+        this._lastSeenCreated = newest.created;
+        this.emit('progress', {
+          lastSeenTransactionId: this._lastSeenKey,
+          lastSeenCreated: this._lastSeenCreated,
+        });
+      }
+    } catch (err) {
+      // Non-fatal — first poll will still work.
+    }
   }
 }
 
