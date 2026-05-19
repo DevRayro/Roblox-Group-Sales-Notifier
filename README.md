@@ -30,7 +30,7 @@ A modern Discord bot that posts a rich notification every time someone buys some
 
 Pick the option that matches your setup. Most people want the first one.
 
-<details open>
+<details>
 <summary><b>Easiest: one-click installer</b></summary>
 
 The installer detects your OS, installs or upgrades Node.js if needed, runs `npm install`, then walks you through every credential with **live validation against Roblox and Discord**. You cannot save a wrong value.
