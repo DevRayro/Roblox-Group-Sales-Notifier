@@ -249,12 +249,6 @@ npm run register  # register slash commands without launching the bot
 
 ---
 
-## Hosting (free, 24/7)
-
-Want the bot running in the cloud instead of your laptop? See **[deploy/README.md](deploy/README.md)** for a step-by-step Northflank guide. One-time browser setup, then every push to `main` redeploys the bot automatically. No credit card needed.
-
----
-
 ## Troubleshooting
 
 <details>

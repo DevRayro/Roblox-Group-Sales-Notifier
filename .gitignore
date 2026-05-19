@@ -30,17 +30,3 @@ dist/
 build/
 coverage/
 *.tsbuildinfo
-
-# Hosting / deploy local artifacts
-.northflank/
-.fly/
-.flyctl/
-flyctl-*
-.koyeb/
-.render/
-.vercel/
-.netlify/
-
-# Docker scratch
-docker-build-cache/
-*.dockerbuild
