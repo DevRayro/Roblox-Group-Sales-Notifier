@@ -1,10 +1,30 @@
 {
-  "name": "rayro-sales-notifier",
-  "version": "1.0.0",
-  "description": "A roblox sales notifier for my group Jojo Star Adventure",
-  "main": "index.js",
+  "name": "roblox-group-sales-notifier",
+  "version": "2.0.0",
+  "description": "A modern Discord bot that notifies your server about Roblox group sales in real time, with stats, slash commands, and rich embeds.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "register": "node src/scripts/registerCommands.js"
+  },
+  "keywords": [
+    "roblox",
+    "discord",
+    "bot",
+    "sales",
+    "notifier",
+    "group",
+    "webhook"
+  ],
+  "author": "DevRayro",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
-    "discord.js": "^14.5.0",
-    "noblox.js": "^4.13.1"
+    "axios": "^1.7.7",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5"
   }
 }
