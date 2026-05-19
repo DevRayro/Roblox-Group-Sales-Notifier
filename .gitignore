@@ -22,3 +22,25 @@ pnpm-debug.log*
 .idea/
 .vscode/
 *.swp
+*.swo
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Hosting / deploy local artifacts
+.northflank/
+.fly/
+.flyctl/
+flyctl-*
+.koyeb/
+.render/
+.vercel/
+.netlify/
+
+# Docker scratch
+docker-build-cache/
+*.dockerbuild
