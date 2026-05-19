@@ -4,7 +4,6 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const { getClient } = require('../roblox/client');
 const { buildStatsEmbed } = require('./embeds');
-const stateUtil = require('../utils/state');
 const config = require('../config');
 
 const definitions = [
@@ -41,13 +40,16 @@ function makeHandlers({ getState }) {
 
     async stats(interaction) {
       await interaction.deferReply();
-      const state = getState();
-      const today = state.totals.daily[new Date().toISOString().slice(0, 10)] || { count: 0, robux: 0 };
-      const last7d = stateUtil.summary(state, 7);
-      const allTime = state.totals.allTime;
+      const now = new Date();
+      const startOfToday = new Date(now);
+      startOfToday.setHours(0, 0, 0, 0);
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
       let groupName = null;
       let currency = null;
+      let today = { count: 0, robux: 0 };
+      let last7d = { count: 0, robux: 0 };
+
       try {
         const info = await getClient().getGroupInfo(config.groupId);
         groupName = info?.name;
@@ -56,8 +58,23 @@ function makeHandlers({ getState }) {
         currency = await getClient().getGroupCurrency(config.groupId);
       } catch { /* ignore */ }
 
+      try {
+        const week = await getClient().aggregateSalesSince(config.groupId, sevenDaysAgo);
+        last7d = { count: week.count, robux: week.robux };
+        for (const tx of week.transactions) {
+          const ts = tx.created ? new Date(tx.created).getTime() : 0;
+          if (ts >= startOfToday.getTime()) {
+            today.count += 1;
+            today.robux += Number(tx.currency?.amount) || 0;
+          }
+        }
+      } catch (err) {
+        await interaction.editReply(`Could not pull live stats from Roblox: \`${err.message}\``);
+        return;
+      }
+
       await interaction.editReply({
-        embeds: [buildStatsEmbed({ groupName, allTime, last7d, today, currency })],
+        embeds: [buildStatsEmbed({ groupName, last7d, today, currency })],
       });
     },
 

@@ -4,6 +4,7 @@
   "description": "A modern Discord bot that notifies your server about Roblox group sales in real time, with stats, slash commands, and rich embeds.",
   "main": "src/index.js",
   "scripts": {
+    "setup": "node scripts/setup.js",
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "register": "node src/scripts/registerCommands.js"

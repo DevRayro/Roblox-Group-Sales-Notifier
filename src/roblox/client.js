@@ -31,30 +31,50 @@ class RobloxClient {
   }
 
   async request(method, url, opts = {}) {
-    try {
-      const res = await this.http.request({
-        method,
-        url,
-        headers: this.authHeaders(opts.headers || {}),
-        params: opts.params,
-        data: opts.data,
-      });
-      return res.data;
-    } catch (err) {
-      if (err.response && err.response.status === 403 && err.response.headers['x-csrf-token']) {
-        this.csrfToken = err.response.headers['x-csrf-token'];
-        // Retry once with the refreshed token.
-        const res = await this.http.request({
-          method,
-          url,
-          headers: this.authHeaders(opts.headers || {}),
-          params: opts.params,
-          data: opts.data,
-        });
+    const doRequest = () => this.http.request({
+      method,
+      url,
+      headers: this.authHeaders(opts.headers || {}),
+      params: opts.params,
+      data: opts.data,
+    });
+
+    let attempt = 0;
+    while (true) {
+      attempt += 1;
+      try {
+        const res = await doRequest();
         return res.data;
+      } catch (err) {
+        const status = err.response?.status;
+        const headers = err.response?.headers || {};
+
+        // CSRF token refresh: Roblox returns the new token on 403 with the header.
+        if (status === 403 && headers['x-csrf-token'] && attempt === 1) {
+          this.csrfToken = headers['x-csrf-token'];
+          continue;
+        }
+
+        // Rate-limit retry, honoring Retry-After (capped to keep startup snappy).
+        if (status === 429 && attempt <= 3) {
+          const retryAfter = Number(headers['retry-after']) || 5;
+          const waitMs = Math.min(retryAfter, 8) * 1000;
+          await new Promise((r) => setTimeout(r, waitMs));
+          continue;
+        }
+
+        // Throw a sanitized error so the cookie never lands in logs.
+        const safe = new Error(`Roblox API ${method} ${this._safeUrl(url)} failed: ${status || err.code || 'network error'}`);
+        safe.status = status;
+        safe.code = err.code;
+        safe.responseBody = err.response?.data;
+        throw safe;
       }
-      throw err;
     }
+  }
+
+  _safeUrl(url) {
+    try { return new URL(url).pathname; } catch { return url; }
   }
 
   async whoAmI() {
@@ -67,6 +87,41 @@ class RobloxClient {
     return this.request('GET', `https://economy.roblox.com/v2/groups/${groupId}/transactions`, {
       params: { transactionType, limit, cursor, sortOrder },
     });
+  }
+
+  // Walks the paginated transactions endpoint backwards in time until the cutoff.
+  // Returns { count, robux, transactions } for sales newer than `since`.
+  async aggregateSalesSince(groupId, since, { hardCap = 1000, maxPages = 10, pageDelayMs = 350 } = {}) {
+    const cutoff = since instanceof Date ? since.getTime() : new Date(since).getTime();
+    let cursor = '';
+    let count = 0;
+    let robux = 0;
+    const transactions = [];
+    let pages = 0;
+    while (pages < maxPages) {
+      if (pages > 0 && pageDelayMs > 0) {
+        await new Promise((r) => setTimeout(r, pageDelayMs));
+      }
+      const res = await this.getGroupTransactions(groupId, {
+        transactionType: 'Sale', limit: 100, sortOrder: 'Desc', cursor,
+      });
+      const data = (res && res.data) || [];
+      if (!data.length) break;
+
+      let reachedCutoff = false;
+      for (const tx of data) {
+        const ts = tx.created ? new Date(tx.created).getTime() : 0;
+        if (ts < cutoff) { reachedCutoff = true; break; }
+        count += 1;
+        robux += Number(tx.currency?.amount) || 0;
+        if (transactions.length < hardCap) transactions.push(tx);
+      }
+      if (reachedCutoff) break;
+      if (!res.nextPageCursor) break;
+      cursor = res.nextPageCursor;
+      pages += 1;
+    }
+    return { count, robux, transactions };
   }
 
   async getGroupInfo(groupId) {

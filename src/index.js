@@ -11,10 +11,10 @@ const { buildSaleEmbed, buildStartupEmbed } = require('./discord/embeds');
 
 async function main() {
   console.log('');
-  console.log('  ╔════════════════════════════════════════════════════╗');
-  console.log('  ║   Roblox Group Sales Notifier  •  v2.0.0           ║');
-  console.log('  ║   github.com/DevRayro/Roblox-Group-Sales-Notifier  ║');
-  console.log('  ╚════════════════════════════════════════════════════╝');
+  console.log('  ============================================================');
+  console.log('    Roblox Group Sales Notifier  -  v2.0.0');
+  console.log('    github.com/DevRayro/Roblox-Group-Sales-Notifier');
+  console.log('  ============================================================');
   console.log('');
 
   const errors = config.validate();
@@ -99,9 +99,6 @@ async function main() {
       logger.warn('Could not enrich sale details:', err.message);
     }
 
-    stateUtil.recordSale(state, amount);
-    persist();
-
     try {
       await bot.sendToChannel({ embeds: [buildSaleEmbed({ tx, buyer, headshotUrl, productThumbUrl })] });
     } catch (err) {
@@ -119,11 +116,19 @@ async function main() {
     }
     if (config.sendStartupRecap) {
       try {
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        let last7d = { count: 0, robux: 0 };
+        try {
+          const week = await getClient().aggregateSalesSince(config.groupId, sevenDaysAgo);
+          last7d = { count: week.count, robux: week.robux };
+        } catch (err) {
+          logger.warn('Could not fetch 7-day totals for startup recap:', err.message);
+        }
         await bot.sendToChannel({
           embeds: [buildStartupEmbed({
             groupName: groupInfo?.name,
             groupId: config.groupId,
-            last7d: stateUtil.summary(state, 7),
+            last7d,
           })],
         });
       } catch (err) {

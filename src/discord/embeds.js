@@ -18,41 +18,39 @@ function buildSaleEmbed({ tx, buyer, headshotUrl, productThumbUrl }) {
   const assetId = tx.details?.id;
   const amount = tx.currency?.amount ?? 0;
   const created = tx.created ? new Date(tx.created) : new Date();
-  const isLimited = tx.isPending === false && (tx.details?.type === 'Asset' || tx.details?.type === 'GamePass');
 
   const description = [
     `**Buyer:** [${displayName} (@${buyerName})](https://www.roblox.com/users/${buyerId}/profile)`,
     `**User ID:** \`${buyerId}\``,
     `**Item:** ${assetId ? `[${productName}](https://www.roblox.com/catalog/${assetId})` : productName}`,
     `**Earned:** ${fmtRobux(amount)}`,
-    tx.isPending ? '`⏳ pending`' : null,
+    tx.isPending ? '_pending_' : null,
   ].filter(Boolean).join('\n');
 
   const embed = new EmbedBuilder()
-    .setTitle('💸 New Group Sale')
+    .setTitle('New group sale')
     .setURL(buyerId ? `https://www.roblox.com/users/${buyerId}/profile` : null)
     .setDescription(description)
     .setColor(COLOR)
     .setTimestamp(created)
-    .setFooter({ text: 'Roblox Group Sales Notifier • by DevRayro' });
+    .setFooter({ text: 'Roblox Group Sales Notifier' });
 
   if (headshotUrl) embed.setThumbnail(headshotUrl);
   if (productThumbUrl) embed.setImage(productThumbUrl);
   return embed;
 }
 
-function buildStatsEmbed({ groupName, allTime, last7d, today, currency }) {
+function buildStatsEmbed({ groupName, last7d, today, currency }) {
   const lines = [
     `**Today:** ${today.count} sales · ${fmtRobux(today.robux)}`,
     `**Last 7 days:** ${last7d.count} sales · ${fmtRobux(last7d.robux)}`,
-    `**All-time (since bot started):** ${allTime.count} sales · ${fmtRobux(allTime.robux)}`,
   ];
   if (currency) {
     lines.push('');
     lines.push(`**Group Robux balance:** ${fmtRobux(currency.robux ?? 0)}`);
   }
   return new EmbedBuilder()
-    .setTitle(`📊 Sales Stats${groupName ? ` — ${groupName}` : ''}`)
+    .setTitle(`Sales Stats${groupName ? ` — ${groupName}` : ''}`)
     .setColor(COLOR)
     .setDescription(lines.join('\n'))
     .setTimestamp(new Date())
@@ -61,11 +59,11 @@ function buildStatsEmbed({ groupName, allTime, last7d, today, currency }) {
 
 function buildStartupEmbed({ groupName, groupId, last7d }) {
   return new EmbedBuilder()
-    .setTitle('🟢 Sales Notifier Online')
+    .setTitle('Sales Notifier online')
     .setColor(COLOR)
     .setDescription([
       `Tracking group **${groupName || groupId}** (\`${groupId}\`).`,
-      `Recent activity (last 7d): **${last7d.count} sales** for **${fmtRobux(last7d.robux)}**.`,
+      `Last 7 days: **${last7d.count} sales** · **${fmtRobux(last7d.robux)}**.`,
       'New sales will be posted here in real time.',
     ].join('\n'))
     .setTimestamp(new Date())

@@ -11,12 +11,12 @@ function log(level, emoji, ...args) {
 }
 
 module.exports = {
-  info: (...a) => log('info', 'ℹ️ ', ...a),
-  ok: (...a) => log('info', '✅', ...a),
-  warn: (...a) => log('warn', '⚠️ ', ...a),
-  error: (...a) => log('error', '❌', ...a),
-  sale: (...a) => log('info', '💸', ...a),
-  bot: (...a) => log('info', '🤖', ...a),
-  roblox: (...a) => log('info', '🟦', ...a),
-  debug: (...a) => process.env.DEBUG ? log('debug', '🔎', ...a) : undefined,
+  info: (...a) => log('info', '·', ...a),
+  ok: (...a) => log('info', '✓', ...a),
+  warn: (...a) => log('warn', '!', ...a),
+  error: (...a) => log('error', '✗', ...a),
+  sale: (...a) => log('info', '$', ...a),
+  bot: (...a) => log('info', '·', ...a),
+  roblox: (...a) => log('info', '·', ...a),
+  debug: (...a) => process.env.DEBUG ? log('debug', '?', ...a) : undefined,
 };
