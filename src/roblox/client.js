@@ -146,10 +146,28 @@ class RobloxClient {
     return null;
   }
 
+  async getUserAvatar(userId, size = '420x420') {
+    // Full-body avatar — the user's "skin".
+    const data = await this.request('GET', 'https://thumbnails.roblox.com/v1/users/avatar', {
+      params: { userIds: userId, size, format: 'Png', isCircular: false },
+    });
+    if (data && data.data && data.data[0]) return data.data[0].imageUrl;
+    return null;
+  }
+
   async getAssetThumbnail(assetId, size = '420x420') {
     if (!assetId) return null;
     const data = await this.request('GET', 'https://thumbnails.roblox.com/v1/assets', {
       params: { assetIds: assetId, size, format: 'Png', isCircular: false },
+    });
+    if (data && data.data && data.data[0]) return data.data[0].imageUrl;
+    return null;
+  }
+
+  async getGroupIcon(groupId, size = '420x420') {
+    if (!groupId) return null;
+    const data = await this.request('GET', 'https://thumbnails.roblox.com/v1/groups/icons', {
+      params: { groupIds: groupId, size, format: 'Png', isCircular: false },
     });
     if (data && data.data && data.data[0]) return data.data[0].imageUrl;
     return null;

@@ -82,25 +82,33 @@ async function main() {
 
     let buyer = null;
     let headshotUrl = null;
+    let avatarUrl = null;
     let productThumbUrl = null;
     try {
       if (buyerId) {
-        const [info, thumb] = await Promise.allSettled([
+        const [info, head, body] = await Promise.allSettled([
           getClient().getUserInfo(buyerId),
-          getClient().getUserHeadshot(buyerId),
+          getClient().getUserHeadshot(buyerId, '150x150'),
+          getClient().getUserAvatar(buyerId, '420x420'),
         ]);
         if (info.status === 'fulfilled') buyer = info.value;
-        if (thumb.status === 'fulfilled') headshotUrl = thumb.value;
+        if (head.status === 'fulfilled') headshotUrl = head.value;
+        if (body.status === 'fulfilled') avatarUrl = body.value;
       }
       if (tx.details?.id) {
-        productThumbUrl = await getClient().getAssetThumbnail(tx.details.id).catch(() => null);
+        productThumbUrl = await getClient().getAssetThumbnail(tx.details.id, '420x420').catch(() => null);
       }
     } catch (err) {
       logger.warn('Could not enrich sale details:', err.message);
     }
 
     try {
-      await bot.sendToChannel({ embeds: [buildSaleEmbed({ tx, buyer, headshotUrl, productThumbUrl })] });
+      await bot.sendToChannel({
+        embeds: [buildSaleEmbed({
+          tx, buyer, headshotUrl, avatarUrl, productThumbUrl,
+          group: { id: config.groupId, name: groupInfo?.name },
+        })],
+      });
     } catch (err) {
       logger.error('Failed to post sale to Discord:', err.message);
     }
@@ -124,10 +132,12 @@ async function main() {
         } catch (err) {
           logger.warn('Could not fetch 7-day totals for startup recap:', err.message);
         }
+        const groupIcon = await getClient().getGroupIcon(config.groupId).catch(() => null);
         await bot.sendToChannel({
           embeds: [buildStartupEmbed({
             groupName: groupInfo?.name,
             groupId: config.groupId,
+            groupIcon,
             last7d,
           })],
         });
